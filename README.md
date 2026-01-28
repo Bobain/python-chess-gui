@@ -12,7 +12,7 @@ A Python chess application with a graphical user interface built using pygame an
 
 - Python 3.12+
 - uv (package manager)
-- Stockfish engine (optional, for AI opponent)
+- Stockfish engine
 
 ## Installation
 
@@ -27,7 +27,7 @@ A Python chess application with a graphical user interface built using pygame an
    uv sync
    ```
 
-3. (Optional) Install Stockfish for AI opponent:
+3. Install Stockfish:
    - macOS: `brew install stockfish`
    - Linux: `apt install stockfish`
    - Windows: Download from [stockfishchess.org](https://stockfishchess.org/download/)
