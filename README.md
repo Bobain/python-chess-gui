@@ -36,6 +36,12 @@ A Python chess application with a graphical user interface built using pygame an
    - Linux: `sudo apt install stockfish`
    - Windows: Download from [stockfishchess.org](https://stockfishchess.org/download/) and add to PATH or extract to `C:\stockfish\`
 
+   Alternatively, set the `STOCKFISH_PATH` environment variable to the full path of the Stockfish executable:
+   ```bash
+   export STOCKFISH_PATH=/path/to/stockfish  # macOS/Linux
+   set STOCKFISH_PATH=C:\path\to\stockfish.exe  # Windows
+   ```
+
 ## Usage
 
 Run the application:

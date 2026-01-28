@@ -1,5 +1,6 @@
 """Configuration constants for the chess GUI application."""
 
+import os
 import platform
 import shutil
 from pathlib import Path
@@ -8,10 +9,20 @@ from pathlib import Path
 def _find_stockfish() -> str:
     """Find Stockfish executable on the system.
 
+    Checks in order:
+    1. STOCKFISH_PATH environment variable
+    2. System PATH
+    3. Common installation locations per platform
+
     Returns:
         Path to Stockfish executable, or 'stockfish' if not found (will try PATH)
     """
-    # First, try to find in PATH
+    # First, check environment variable
+    env_path = os.environ.get("STOCKFISH_PATH")
+    if env_path and Path(env_path).exists():
+        return env_path
+
+    # Second, try to find in PATH
     stockfish_in_path = shutil.which("stockfish")
     if stockfish_in_path:
         return stockfish_in_path
