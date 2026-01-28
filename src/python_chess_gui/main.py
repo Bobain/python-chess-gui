@@ -8,6 +8,7 @@ from python_chess_gui.constants import (
     COLOR_BACKGROUND,
     DIFFICULTY_PRESETS,
     FPS,
+    STOCKFISH_PATH,
     WINDOW_HEIGHT,
     WINDOW_WIDTH,
 )
@@ -240,6 +241,14 @@ class ChessApplication:
         if self.engine is not None:
             self.engine.quit()
         self.engine = StockfishEngineController(elo)
+
+        # Check if Stockfish is available
+        if not self.engine.is_available():
+            self.settings_menu.set_error(
+                f"Stockfish not found! Please install Stockfish and ensure it's in your PATH. "
+                f"Searched: {STOCKFISH_PATH}"
+            )
+            return
 
         # Reset game state
         self.game_state.reset()

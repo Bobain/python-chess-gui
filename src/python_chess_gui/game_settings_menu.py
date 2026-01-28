@@ -38,6 +38,7 @@ class GameSettingsMenu:
         # Menu state
         self.selected_color: bool | None = None  # True = white, False = black
         self.selected_difficulty: str = DEFAULT_DIFFICULTY
+        self.error_message: str | None = None
 
         # Button rectangles (calculated in render)
         self.white_button_rect: pygame.Rect | None = None
@@ -68,6 +69,9 @@ class GameSettingsMenu:
 
         # Start button
         self._render_start_button()
+
+        # Error message if any
+        self._render_error_message()
 
     def _render_color_selection(self) -> None:
         """Render the color selection buttons."""
@@ -225,3 +229,47 @@ class GameSettingsMenu:
         """Reset menu selections."""
         self.selected_color = None
         self.selected_difficulty = DEFAULT_DIFFICULTY
+        self.error_message = None
+
+    def set_error(self, message: str) -> None:
+        """Set an error message to display.
+
+        Args:
+            message: Error message to show
+        """
+        self.error_message = message
+
+    def _render_error_message(self) -> None:
+        """Render error message if present."""
+        if self.error_message is None:
+            return
+
+        # Red color for error
+        error_color = (255, 100, 100)
+
+        # Word wrap the error message
+        max_width = WINDOW_WIDTH - 40
+        words = self.error_message.split()
+        lines = []
+        current_line = ""
+
+        for word in words:
+            test_line = current_line + " " + word if current_line else word
+            test_surface = self.button_font.render(test_line, True, error_color)
+            if test_surface.get_width() <= max_width:
+                current_line = test_line
+            else:
+                if current_line:
+                    lines.append(current_line)
+                current_line = word
+
+        if current_line:
+            lines.append(current_line)
+
+        # Render each line
+        y_pos = 540
+        for line in lines:
+            error_surface = self.button_font.render(line, True, error_color)
+            error_rect = error_surface.get_rect(centerx=WINDOW_WIDTH // 2, top=y_pos)
+            self.screen.blit(error_surface, error_rect)
+            y_pos += 22
