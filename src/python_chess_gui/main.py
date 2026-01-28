@@ -4,11 +4,11 @@ import chess
 import pygame
 
 from python_chess_gui.chess_board_renderer import ChessBoardRenderer
+from python_chess_gui.config_manager import find_stockfish, set_stockfish_path
 from python_chess_gui.constants import (
     COLOR_BACKGROUND,
     DIFFICULTY_PRESETS,
     FPS,
-    STOCKFISH_PATH,
     WINDOW_HEIGHT,
     WINDOW_WIDTH,
 )
@@ -84,12 +84,28 @@ class ChessApplication:
         Args:
             event: Pygame event to process
         """
+        # Handle path input mode keyboard events
         if event.type == pygame.KEYDOWN:
-            if event.key in (pygame.K_ESCAPE, pygame.K_q):
+            if self.settings_menu.path_input_mode:
+                if self.settings_menu.handle_key_event(event):
+                    # If Enter was pressed and path input mode ended, try to start game
+                    if not self.settings_menu.path_input_mode and self.settings_menu.path_input_text:
+                        self._start_game()
+                    return
+            elif event.key in (pygame.K_ESCAPE, pygame.K_q):
                 self.running = False
                 return
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            # Check if clicking confirm button in path input mode
+            if self.settings_menu.path_input_mode:
+                if (self.settings_menu.path_confirm_rect and
+                    self.settings_menu.path_confirm_rect.collidepoint(event.pos)):
+                    self.settings_menu.path_input_mode = False
+                    if self.settings_menu.path_input_text:
+                        self._start_game()
+                return
+
             if self.settings_menu.handle_click(event.pos):
                 self._start_game()
 
@@ -236,17 +252,24 @@ class ChessApplication:
         """Start a new game with the selected settings."""
         self.player_is_white, self.difficulty_name = self.settings_menu.get_settings()
 
+        # Check if user provided a custom Stockfish path
+        custom_path = self.settings_menu.get_stockfish_path()
+        if custom_path:
+            # Save to config for future use
+            set_stockfish_path(custom_path)
+
         # Initialize engine with selected difficulty
         elo = DIFFICULTY_PRESETS[self.difficulty_name]
+        stockfish_path = custom_path or find_stockfish()
+
         if self.engine is not None:
             self.engine.quit()
-        self.engine = StockfishEngineController(elo)
+        self.engine = StockfishEngineController(elo, stockfish_path)
 
         # Check if Stockfish is available
         if not self.engine.is_available():
-            self.settings_menu.set_error(
-                f"Stockfish not found! Please install Stockfish and ensure it's in your PATH. "
-                f"Searched: {STOCKFISH_PATH}"
+            self.settings_menu.show_path_input(
+                "Stockfish not found! Enter the path to the Stockfish executable:"
             )
             return
 

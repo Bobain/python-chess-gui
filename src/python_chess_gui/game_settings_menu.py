@@ -40,11 +40,18 @@ class GameSettingsMenu:
         self.selected_difficulty: str = DEFAULT_DIFFICULTY
         self.error_message: str | None = None
 
+        # Path input state
+        self.path_input_mode: bool = False
+        self.path_input_text: str = ""
+        self.path_input_prompt: str = ""
+
         # Button rectangles (calculated in render)
         self.white_button_rect: pygame.Rect | None = None
         self.black_button_rect: pygame.Rect | None = None
         self.difficulty_button_rects: dict[str, pygame.Rect] = {}
         self.start_button_rect: pygame.Rect | None = None
+        self.path_input_rect: pygame.Rect | None = None
+        self.path_confirm_rect: pygame.Rect | None = None
 
     def render(self) -> None:
         """Render the complete settings menu."""
@@ -61,17 +68,22 @@ class GameSettingsMenu:
         subtitle_rect = subtitle.get_rect(centerx=WINDOW_WIDTH // 2, top=90)
         self.screen.blit(subtitle, subtitle_rect)
 
-        # Color selection
-        self._render_color_selection()
+        if self.path_input_mode:
+            # Show path input screen
+            self._render_path_input()
+        else:
+            # Normal menu
+            # Color selection
+            self._render_color_selection()
 
-        # Difficulty selection
-        self._render_difficulty_selection()
+            # Difficulty selection
+            self._render_difficulty_selection()
 
-        # Start button
-        self._render_start_button()
+            # Start button
+            self._render_start_button()
 
-        # Error message if any
-        self._render_error_message()
+            # Error message if any
+            self._render_error_message()
 
     def _render_color_selection(self) -> None:
         """Render the color selection buttons."""
@@ -230,6 +242,9 @@ class GameSettingsMenu:
         self.selected_color = None
         self.selected_difficulty = DEFAULT_DIFFICULTY
         self.error_message = None
+        self.path_input_mode = False
+        self.path_input_text = ""
+        self.path_input_prompt = ""
 
     def set_error(self, message: str) -> None:
         """Set an error message to display.
@@ -273,3 +288,115 @@ class GameSettingsMenu:
             error_rect = error_surface.get_rect(centerx=WINDOW_WIDTH // 2, top=y_pos)
             self.screen.blit(error_surface, error_rect)
             y_pos += 22
+
+    def show_path_input(self, prompt: str) -> None:
+        """Show the path input screen.
+
+        Args:
+            prompt: Prompt message to show
+        """
+        self.path_input_mode = True
+        self.path_input_prompt = prompt
+        self.path_input_text = ""
+        self.error_message = None
+
+    def get_stockfish_path(self) -> str | None:
+        """Get the user-entered Stockfish path.
+
+        Returns:
+            Path string if entered, None otherwise
+        """
+        if self.path_input_text:
+            return self.path_input_text
+        return None
+
+    def handle_key_event(self, event: pygame.event.Event) -> bool:
+        """Handle keyboard events for path input.
+
+        Args:
+            event: Pygame key event
+
+        Returns:
+            True if event was handled
+        """
+        if not self.path_input_mode:
+            return False
+
+        if event.key == pygame.K_RETURN:
+            # Confirm path and try to start game
+            self.path_input_mode = False
+            return True
+        elif event.key == pygame.K_ESCAPE:
+            # Cancel path input
+            self.path_input_mode = False
+            self.path_input_text = ""
+            return True
+        elif event.key == pygame.K_BACKSPACE:
+            self.path_input_text = self.path_input_text[:-1]
+            return True
+        elif event.unicode and event.unicode.isprintable():
+            self.path_input_text += event.unicode
+            return True
+
+        return False
+
+    def _render_path_input(self) -> None:
+        """Render the path input screen."""
+        # Prompt text
+        prompt_color = (255, 200, 100)
+        prompt_surface = self.button_font.render(self.path_input_prompt, True, prompt_color)
+        prompt_rect = prompt_surface.get_rect(centerx=WINDOW_WIDTH // 2, top=160)
+        self.screen.blit(prompt_surface, prompt_rect)
+
+        # Input field background
+        input_width = WINDOW_WIDTH - 80
+        input_height = 40
+        input_x = 40
+        input_y = 220
+        self.path_input_rect = pygame.Rect(input_x, input_y, input_width, input_height)
+
+        pygame.draw.rect(self.screen, (60, 60, 60), self.path_input_rect, border_radius=5)
+        pygame.draw.rect(self.screen, COLOR_WHITE, self.path_input_rect, 2, border_radius=5)
+
+        # Input text (with cursor)
+        display_text = self.path_input_text + "|"
+        text_surface = self.button_font.render(display_text, True, COLOR_TEXT)
+        text_rect = text_surface.get_rect(midleft=(input_x + 10, input_y + input_height // 2))
+
+        # Clip text if too long
+        if text_rect.width > input_width - 20:
+            # Show the end of the text
+            visible_text = display_text
+            while self.button_font.size(visible_text)[0] > input_width - 20 and len(visible_text) > 1:
+                visible_text = visible_text[1:]
+            text_surface = self.button_font.render(visible_text, True, COLOR_TEXT)
+            text_rect = text_surface.get_rect(midleft=(input_x + 10, input_y + input_height // 2))
+
+        self.screen.blit(text_surface, text_rect)
+
+        # Confirm button
+        button_width = 150
+        button_height = 50
+        button_x = (WINDOW_WIDTH - button_width) // 2
+        button_y = 300
+        self.path_confirm_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+
+        pygame.draw.rect(self.screen, COLOR_BUTTON_SELECTED, self.path_confirm_rect, border_radius=5)
+        pygame.draw.rect(self.screen, COLOR_WHITE, self.path_confirm_rect, 2, border_radius=5)
+
+        confirm_text = self.button_font.render("Confirm", True, COLOR_TEXT)
+        confirm_rect = confirm_text.get_rect(center=self.path_confirm_rect.center)
+        self.screen.blit(confirm_text, confirm_rect)
+
+        # Help text
+        help_texts = [
+            "Enter the full path to stockfish executable",
+            "Press Enter to confirm, Escape to cancel",
+            "Example: /usr/local/bin/stockfish",
+        ]
+        y_pos = 380
+        for help_text in help_texts:
+            help_surface = self.button_font.render(help_text, True, (150, 150, 150))
+            help_rect = help_surface.get_rect(centerx=WINDOW_WIDTH // 2, top=y_pos)
+            self.screen.blit(help_surface, help_rect)
+            y_pos += 25

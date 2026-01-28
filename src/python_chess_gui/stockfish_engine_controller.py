@@ -3,35 +3,41 @@
 import chess
 import chess.engine
 
+from python_chess_gui.config_manager import find_stockfish
 from python_chess_gui.constants import (
     DIFFICULTY_PRESETS,
     EVAL_MATE_SCORE,
     STOCKFISH_DEPTH,
     STOCKFISH_MOVE_TIME,
-    STOCKFISH_PATH,
 )
 
 
 class StockfishEngineController:
     """Controls Stockfish engine for AI moves and evaluation."""
 
-    def __init__(self, elo: int = 1600):
+    def __init__(self, elo: int = 1600, stockfish_path: str | None = None):
         """Initialize the Stockfish engine.
 
         Args:
             elo: Elo rating to limit Stockfish strength (800-3000)
+            stockfish_path: Optional custom path to Stockfish executable
         """
         self.engine: chess.engine.SimpleEngine | None = None
         self.elo = elo
+        self.stockfish_path = stockfish_path or find_stockfish()
         self._start_engine()
 
     def _start_engine(self) -> None:
         """Start the Stockfish engine process."""
+        if self.stockfish_path is None:
+            self.engine = None
+            return
+
         try:
-            self.engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
+            self.engine = chess.engine.SimpleEngine.popen_uci(self.stockfish_path)
             self._configure_elo(self.elo)
         except FileNotFoundError:
-            print(f"Error: Stockfish not found at {STOCKFISH_PATH}")
+            print(f"Error: Stockfish not found at {self.stockfish_path}")
             self.engine = None
         except Exception as e:
             print(f"Error starting Stockfish: {e}")
