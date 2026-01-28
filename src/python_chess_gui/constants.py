@@ -1,5 +1,53 @@
 """Configuration constants for the chess GUI application."""
 
+import platform
+import shutil
+from pathlib import Path
+
+
+def _find_stockfish() -> str:
+    """Find Stockfish executable on the system.
+
+    Returns:
+        Path to Stockfish executable, or 'stockfish' if not found (will try PATH)
+    """
+    # First, try to find in PATH
+    stockfish_in_path = shutil.which("stockfish")
+    if stockfish_in_path:
+        return stockfish_in_path
+
+    # Platform-specific common locations
+    system = platform.system()
+
+    if system == "Darwin":  # macOS
+        common_paths = [
+            "/opt/homebrew/bin/stockfish",  # Apple Silicon Homebrew
+            "/usr/local/bin/stockfish",      # Intel Homebrew
+        ]
+    elif system == "Linux":
+        common_paths = [
+            "/usr/bin/stockfish",
+            "/usr/games/stockfish",
+            "/usr/local/bin/stockfish",
+        ]
+    elif system == "Windows":
+        common_paths = [
+            Path.home() / "stockfish" / "stockfish.exe",
+            Path.home() / "stockfish" / "stockfish-windows-x86-64-avx2.exe",
+            "C:/Program Files/Stockfish/stockfish.exe",
+            "C:/stockfish/stockfish.exe",
+        ]
+    else:
+        common_paths = []
+
+    for path in common_paths:
+        if Path(path).exists():
+            return str(path)
+
+    # Fallback: just return 'stockfish' and hope it's in PATH
+    return "stockfish"
+
+
 # Window dimensions
 BOARD_SIZE = 640
 SQUARE_SIZE = BOARD_SIZE // 8
@@ -60,7 +108,7 @@ PIECE_UNICODE = {
 }
 
 # Stockfish configuration
-STOCKFISH_PATH = "/opt/homebrew/bin/stockfish"
+STOCKFISH_PATH = _find_stockfish()
 STOCKFISH_DEPTH = 15  # Analysis depth
 STOCKFISH_MOVE_TIME = 1.0  # Seconds to think for AI moves
 

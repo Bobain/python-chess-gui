@@ -33,8 +33,8 @@ A Python chess application with a graphical user interface built using pygame an
 
 3. Install Stockfish:
    - macOS: `brew install stockfish`
-   - Linux: `apt install stockfish`
-   - Windows: Download from [stockfishchess.org](https://stockfishchess.org/download/)
+   - Linux: `sudo apt install stockfish`
+   - Windows: Download from [stockfishchess.org](https://stockfishchess.org/download/) and add to PATH or extract to `C:\stockfish\`
 
 ## Usage
 
