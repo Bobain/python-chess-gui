@@ -75,13 +75,19 @@ class GameStatusDisplay:
         # Draw control hints
         hints = [
             "[Z] Undo",
-            "[H] Hint",
+            "[H] Hint*",
             "[N] New Game",
-            f"Difficulty: {difficulty_name}",
+            f"{difficulty_name}",
         ]
 
         x_offset = 15
         for hint in hints:
             hint_surface = self.button_font.render(hint, True, COLOR_TEXT)
-            self.screen.blit(hint_surface, (x_offset, control_bar_y + 17))
+            self.screen.blit(hint_surface, (x_offset, control_bar_y + 8))
             x_offset += hint_surface.get_width() + 30
+
+        # Draw disclaimer about hints and eval being at chosen level
+        disclaimer_color = (150, 150, 150)  # Gray
+        disclaimer = f"* Hints & Eval are computed at {difficulty_name} strength"
+        disclaimer_surface = self.button_font.render(disclaimer, True, disclaimer_color)
+        self.screen.blit(disclaimer_surface, (15, control_bar_y + 30))
