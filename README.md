@@ -50,7 +50,9 @@ pip install python-chess-gui
 ### Install Stockfish
 
 - macOS: `brew install stockfish`
-- Linux: `sudo apt install stockfish`
+- Linux (Debian/Ubuntu): `sudo apt install stockfish`
+- Linux (Fedora): `sudo dnf install stockfish`
+- Linux (Arch): `yay -S stockfish` (from AUR)
 
 Alternatively, set the `STOCKFISH_PATH` environment variable to the full path of the Stockfish executable:
 ```bash
