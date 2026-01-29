@@ -59,7 +59,7 @@ class GameSettingsMenu:
         self.screen.fill(COLOR_MENU_BG)
 
         # Title
-        title = self.title_font.render("Python Chess", True, COLOR_TEXT)
+        title = self.title_font.render("Play Chess", True, COLOR_TEXT)
         title_rect = title.get_rect(centerx=WINDOW_WIDTH // 2, top=40)
         self.screen.blit(title, title_rect)
 

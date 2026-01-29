@@ -26,7 +26,7 @@ class ChessApplication:
     def __init__(self):
         """Initialize the chess application."""
         pygame.init()
-        pygame.display.set_caption("Python Chess - vs Stockfish")
+        pygame.display.set_caption("Play Chess - vs Stockfish")
 
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         self.clock = pygame.time.Clock()

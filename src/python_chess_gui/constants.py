@@ -67,13 +67,13 @@ STOCKFISH_MOVE_TIME = 1.0  # Seconds to think for AI moves
 # Note: Stockfish 17+ requires minimum Elo of 1320
 # Stockfish UCI_Elo tends to play weaker than the rating suggests
 DIFFICULTY_PRESETS = {
-    "Beginner": 1350,
-    "Easy": 1800,
-    "Medium": 2200,
-    "Hard": 2600,
-    "Expert": 3000,
+    "Level 1": 1350,
+    "Level 2": 1800,
+    "Level 3": 2200,
+    "Level 4": 2600,
+    "Level 5": 3000,
 }
-DEFAULT_DIFFICULTY = "Medium"
+DEFAULT_DIFFICULTY = "Level 3"
 
 # Evaluation bar scaling
 EVAL_MAX_CENTIPAWNS = 1000  # +/- 10 pawns = max bar
