@@ -65,12 +65,13 @@ STOCKFISH_MOVE_TIME = 1.0  # Seconds to think for AI moves
 
 # AI difficulty presets (Elo ratings)
 # Note: Stockfish 17+ requires minimum Elo of 1320
+# Stockfish UCI_Elo tends to play weaker than the rating suggests
 DIFFICULTY_PRESETS = {
-    "Beginner": 1320,
-    "Easy": 1500,
-    "Medium": 1700,
-    "Hard": 2000,
-    "Expert": 2500,
+    "Beginner": 1350,
+    "Easy": 1800,
+    "Medium": 2200,
+    "Hard": 2600,
+    "Expert": 3000,
 }
 DEFAULT_DIFFICULTY = "Medium"
 
