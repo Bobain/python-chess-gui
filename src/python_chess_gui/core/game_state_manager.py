@@ -31,7 +31,6 @@ class GameStateManager:
         """
         piece = self.board.piece_at(square)
 
-        # If there's a piece of the current turn's color, select it
         if piece is not None and piece.color == self.board.turn:
             self.selected_square = square
             return self.get_legal_moves_from_square(square)
@@ -59,16 +58,14 @@ class GameStateManager:
         Returns:
             The move if successful, None if illegal
         """
-        # Check for promotion
         piece = self.board.piece_at(from_square)
         promotion = None
 
         if piece is not None and piece.piece_type == chess.PAWN:
-            # Check if pawn is reaching the back rank
             if piece.color == chess.WHITE and chess.square_rank(to_square) == 7:
-                promotion = chess.QUEEN  # Auto-promote to queen
+                promotion = chess.QUEEN
             elif piece.color == chess.BLACK and chess.square_rank(to_square) == 0:
-                promotion = chess.QUEEN  # Auto-promote to queen
+                promotion = chess.QUEEN
 
         move = chess.Move(from_square, to_square, promotion=promotion)
 
@@ -79,7 +76,6 @@ class GameStateManager:
             self.selected_square = None
             return move
 
-        # Try without promotion (for non-pawn moves that might match)
         move_no_promo = chess.Move(from_square, to_square)
         if move_no_promo in self.board.legal_moves:
             self.board.push(move_no_promo)
@@ -129,10 +125,8 @@ class GameStateManager:
             True if moves were undone, False if not enough moves
         """
         if len(self.move_history) < 2:
-            # If only one move, undo just that one
             return self.undo_move()
 
-        # Undo two moves
         self.undo_move()
         self.undo_move()
         return True

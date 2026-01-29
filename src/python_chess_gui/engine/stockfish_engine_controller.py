@@ -3,12 +3,12 @@
 import chess
 import chess.engine
 
-from python_chess_gui.config_manager import find_stockfish
+from python_chess_gui.engine.config_manager import find_stockfish
 from python_chess_gui.constants import (
     DIFFICULTY_PRESETS,
-    EVAL_MATE_SCORE,
-    STOCKFISH_DEPTH,
-    STOCKFISH_MOVE_TIME,
+    EVALUATION_MATE_SCORE,
+    STOCKFISH_ANALYSIS_DEPTH,
+    STOCKFISH_MOVE_TIME_SECONDS,
 )
 
 
@@ -52,7 +52,6 @@ class StockfishEngineController:
         if self.engine is None:
             return
 
-        # Clamp elo to valid range (Stockfish 17+ requires minimum 1320)
         elo = max(1320, min(3000, elo))
         self.elo = elo
 
@@ -93,7 +92,7 @@ class StockfishEngineController:
         try:
             result = self.engine.play(
                 board,
-                chess.engine.Limit(time=STOCKFISH_MOVE_TIME),
+                chess.engine.Limit(time=STOCKFISH_MOVE_TIME_SECONDS),
             )
             return result.move
         except Exception as e:
@@ -115,25 +114,20 @@ class StockfishEngineController:
         try:
             info = self.engine.analyse(
                 board,
-                chess.engine.Limit(depth=STOCKFISH_DEPTH),
+                chess.engine.Limit(depth=STOCKFISH_ANALYSIS_DEPTH),
             )
 
             score = info["score"].white()
 
             if score.is_mate():
-                # Return a large value for mate
-                # mate() > 0 means white will deliver mate (or already has)
-                # mate() < 0 means black will deliver mate (or already has)
-                # mate() == 0 means it's already checkmate for the side to move
                 mate_in = score.mate()
                 if mate_in is not None:
                     if mate_in >= 0:
-                        return EVAL_MATE_SCORE / 100  # White winning/won
+                        return EVALUATION_MATE_SCORE / 100
                     else:
-                        return -EVAL_MATE_SCORE / 100  # Black winning/won
+                        return -EVALUATION_MATE_SCORE / 100
                 return 0.0
 
-            # Convert centipawns to pawns
             cp = score.score()
             if cp is not None:
                 return cp / 100.0

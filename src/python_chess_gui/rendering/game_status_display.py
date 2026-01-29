@@ -3,30 +3,45 @@
 import pygame
 
 from python_chess_gui.constants import (
-    BOARD_OFFSET_Y,
-    COLOR_BACKGROUND,
-    COLOR_TEXT,
-    CONTROL_BAR_HEIGHT,
-    FONT_NAME,
-    FONT_SIZE_BUTTON,
-    FONT_SIZE_STATUS,
-    WINDOW_HEIGHT,
-    WINDOW_WIDTH,
+    TEXT_COLOR_RGB,
+    WINDOW_BACKGROUND_COLOR_RGB,
 )
+from python_chess_gui.layout_manager import LayoutManager
 
 
 class GameStatusDisplay:
     """Renders game status text and control hints."""
 
-    def __init__(self, screen: pygame.Surface):
+    def __init__(self, screen: pygame.Surface, layout: LayoutManager):
         """Initialize the status display.
 
         Args:
             screen: Pygame surface to render on
+            layout: Layout manager for dynamic sizing
         """
         self.screen = screen
-        self.status_font = pygame.font.SysFont("Arial, Helvetica", FONT_SIZE_STATUS)
-        self.button_font = pygame.font.SysFont("Arial, Helvetica", FONT_SIZE_BUTTON)
+        self.layout = layout
+        self._create_fonts()
+
+    def _create_fonts(self) -> None:
+        """Create fonts based on current layout dimensions."""
+        self.status_font = pygame.font.SysFont(
+            "Arial, Helvetica",
+            self.layout.font_size_status
+        )
+        self.button_font = pygame.font.SysFont(
+            "Arial, Helvetica",
+            self.layout.font_size_button
+        )
+
+    def update_layout(self, layout: LayoutManager) -> None:
+        """Update the layout manager and recreate fonts.
+
+        Args:
+            layout: New layout manager instance
+        """
+        self.layout = layout
+        self._create_fonts()
 
     def render(
         self,
@@ -49,30 +64,28 @@ class GameStatusDisplay:
         # Clear the status bar area
         pygame.draw.rect(
             self.screen,
-            COLOR_BACKGROUND,
-            (0, 0, WINDOW_WIDTH, BOARD_OFFSET_Y),
+            WINDOW_BACKGROUND_COLOR_RGB,
+            (0, 0, self.layout.window_width, self.layout.board_offset_y),
         )
 
         # Draw turn text on left
-        turn_surface = self.status_font.render(turn_text, True, COLOR_TEXT)
+        turn_surface = self.status_font.render(turn_text, True, TEXT_COLOR_RGB)
         self.screen.blit(turn_surface, (15, 15))
 
         # Draw evaluation on right
-        eval_surface = self.status_font.render(eval_text, True, COLOR_TEXT)
-        eval_rect = eval_surface.get_rect(right=WINDOW_WIDTH - 15, top=15)
+        eval_surface = self.status_font.render(eval_text, True, TEXT_COLOR_RGB)
+        eval_rect = eval_surface.get_rect(right=self.layout.window_width - 15, top=15)
         self.screen.blit(eval_surface, eval_rect)
 
     def _draw_control_bar(self, difficulty_name: str) -> None:
         """Draw the bottom control bar with hints."""
-        # Clear the control bar area
-        control_bar_y = WINDOW_HEIGHT - CONTROL_BAR_HEIGHT
+        control_bar_y = self.layout.window_height - self.layout.control_bar_height
         pygame.draw.rect(
             self.screen,
-            COLOR_BACKGROUND,
-            (0, control_bar_y, WINDOW_WIDTH, CONTROL_BAR_HEIGHT),
+            WINDOW_BACKGROUND_COLOR_RGB,
+            (0, control_bar_y, self.layout.window_width, self.layout.control_bar_height),
         )
 
-        # Draw control hints
         hints = [
             "[Z] Undo",
             "[H] Hint*",
@@ -82,12 +95,12 @@ class GameStatusDisplay:
 
         x_offset = 15
         for hint in hints:
-            hint_surface = self.button_font.render(hint, True, COLOR_TEXT)
+            hint_surface = self.button_font.render(hint, True, TEXT_COLOR_RGB)
             self.screen.blit(hint_surface, (x_offset, control_bar_y + 8))
             x_offset += hint_surface.get_width() + 30
 
         # Draw disclaimer about hints and eval being at chosen level
-        disclaimer_color = (150, 150, 150)  # Gray
+        disclaimer_color = (150, 150, 150)
         disclaimer = f"* Hints & Eval are computed at {difficulty_name} strength"
         disclaimer_surface = self.button_font.render(disclaimer, True, disclaimer_color)
         self.screen.blit(disclaimer_surface, (15, control_bar_y + 30))

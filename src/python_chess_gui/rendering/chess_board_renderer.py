@@ -1,43 +1,58 @@
 """Chess board and piece rendering."""
 
+import math
+
 import chess
 import pygame
 
 from python_chess_gui.constants import (
-    BOARD_OFFSET_X,
-    BOARD_OFFSET_Y,
-    BOARD_SIZE,
-    COLOR_CHECK,
-    COLOR_DARK_SQUARE,
-    COLOR_HINT,
-    COLOR_LAST_MOVE,
-    COLOR_LEGAL_MOVE,
-    COLOR_LIGHT_SQUARE,
-    COLOR_SELECTED,
+    CHECK_HIGHLIGHT_COLOR_RGB,
+    DARK_SQUARE_COLOR_RGB,
     FILE_LABELS,
-    FONT_NAME,
-    FONT_SIZE_COORD,
-    FONT_SIZE_PIECE,
+    HINT_MOVE_HIGHLIGHT_RGBA,
+    LAST_MOVE_HIGHLIGHT_RGBA,
+    LEGAL_MOVE_INDICATOR_COLOR_RGB,
+    LIGHT_SQUARE_COLOR_RGB,
     PIECE_UNICODE,
     RANK_LABELS,
-    SQUARE_SIZE,
+    SELECTED_SQUARE_HIGHLIGHT_RGBA,
 )
-from python_chess_gui.coordinate_converter import convert_board_square_to_screen_position
+from python_chess_gui.layout_manager import LayoutManager
 
 
 class ChessBoardRenderer:
     """Renders the chess board, pieces, and visual highlights."""
 
-    def __init__(self, screen: pygame.Surface):
+    def __init__(self, screen: pygame.Surface, layout: LayoutManager):
         """Initialize the renderer.
 
         Args:
             screen: Pygame surface to render on
+            layout: Layout manager for dynamic sizing
         """
         self.screen = screen
-        # Use a system font that supports Unicode chess symbols
-        self.piece_font = pygame.font.SysFont("Apple Symbols, Segoe UI Symbol, DejaVu Sans", FONT_SIZE_PIECE)
-        self.coord_font = pygame.font.SysFont("Arial, Helvetica", FONT_SIZE_COORD)
+        self.layout = layout
+        self._create_fonts()
+
+    def _create_fonts(self) -> None:
+        """Create fonts based on current layout dimensions."""
+        self.piece_font = pygame.font.SysFont(
+            "Apple Symbols, Segoe UI Symbol, DejaVu Sans",
+            self.layout.font_size_piece
+        )
+        self.coord_font = pygame.font.SysFont(
+            "Arial, Helvetica",
+            self.layout.font_size_coordinates
+        )
+
+    def update_layout(self, layout: LayoutManager) -> None:
+        """Update the layout manager and recreate fonts.
+
+        Args:
+            layout: New layout manager instance
+        """
+        self.layout = layout
+        self._create_fonts()
 
     def render(
         self,
@@ -67,20 +82,44 @@ class ChessBoardRenderer:
         self._draw_pieces(board, player_is_white)
         self._draw_coordinates(player_is_white)
 
+    def _convert_square_to_screen(self, square: chess.Square, player_is_white: bool) -> tuple[int, int]:
+        """Convert a chess square to screen coordinates.
+
+        Args:
+            square: Chess square index (0-63)
+            player_is_white: True if player is playing white
+
+        Returns:
+            Tuple of (x, y) screen coordinates
+        """
+        file = chess.square_file(square)
+        rank = chess.square_rank(square)
+
+        if player_is_white:
+            screen_col = file
+            screen_row = 7 - rank
+        else:
+            screen_col = 7 - file
+            screen_row = rank
+
+        x = self.layout.board_offset_x + screen_col * self.layout.square_size
+        y = self.layout.board_offset_y + screen_row * self.layout.square_size
+
+        return (x, y)
+
     def _draw_squares(self, player_is_white: bool) -> None:
         """Draw the 8x8 chess board squares."""
         for row in range(8):
             for col in range(8):
-                x = BOARD_OFFSET_X + col * SQUARE_SIZE
-                y = BOARD_OFFSET_Y + row * SQUARE_SIZE
+                x = self.layout.board_offset_x + col * self.layout.square_size
+                y = self.layout.board_offset_y + row * self.layout.square_size
 
-                # Determine square color based on position
-                # (row + col) even = light, odd = dark
                 is_light = (row + col) % 2 == 0
-                color = COLOR_LIGHT_SQUARE if is_light else COLOR_DARK_SQUARE
+                color = LIGHT_SQUARE_COLOR_RGB if is_light else DARK_SQUARE_COLOR_RGB
 
                 pygame.draw.rect(
-                    self.screen, color, (x, y, SQUARE_SIZE, SQUARE_SIZE)
+                    self.screen, color,
+                    (x, y, self.layout.square_size, self.layout.square_size)
                 )
 
     def _draw_selected_highlight(
@@ -90,11 +129,13 @@ class ChessBoardRenderer:
         if selected_square is None:
             return
 
-        x, y = convert_board_square_to_screen_position(selected_square, player_is_white)
+        x, y = self._convert_square_to_screen(selected_square, player_is_white)
 
-        # Create semi-transparent surface for highlight
-        highlight = pygame.Surface((SQUARE_SIZE, SQUARE_SIZE), pygame.SRCALPHA)
-        highlight.fill(COLOR_SELECTED)
+        highlight = pygame.Surface(
+            (self.layout.square_size, self.layout.square_size),
+            pygame.SRCALPHA
+        )
+        highlight.fill(SELECTED_SQUARE_HIGHLIGHT_RGBA)
         self.screen.blit(highlight, (x, y))
 
     def _draw_legal_move_indicators(
@@ -109,28 +150,27 @@ class ChessBoardRenderer:
 
         for move in legal_moves:
             target_square = move.to_square
-            x, y = convert_board_square_to_screen_position(target_square, player_is_white)
+            x, y = self._convert_square_to_screen(target_square, player_is_white)
 
-            center_x = x + SQUARE_SIZE // 2
-            center_y = y + SQUARE_SIZE // 2
+            center_x = x + self.layout.square_size // 2
+            center_y = y + self.layout.square_size // 2
 
-            # Check if target square has a piece (capture)
             if board.piece_at(target_square) is not None:
                 # Draw ring for captures
                 pygame.draw.circle(
                     self.screen,
-                    COLOR_LEGAL_MOVE,
+                    LEGAL_MOVE_INDICATOR_COLOR_RGB,
                     (center_x, center_y),
-                    SQUARE_SIZE // 2 - 4,
+                    self.layout.square_size // 2 - 4,
                     4,
                 )
             else:
                 # Draw small dot for empty squares
                 pygame.draw.circle(
                     self.screen,
-                    COLOR_LEGAL_MOVE,
+                    LEGAL_MOVE_INDICATOR_COLOR_RGB,
                     (center_x, center_y),
-                    SQUARE_SIZE // 6,
+                    self.layout.square_size // 6,
                 )
 
     def _draw_last_move_highlight(
@@ -141,10 +181,13 @@ class ChessBoardRenderer:
             return
 
         for square in [last_move.from_square, last_move.to_square]:
-            x, y = convert_board_square_to_screen_position(square, player_is_white)
+            x, y = self._convert_square_to_screen(square, player_is_white)
 
-            highlight = pygame.Surface((SQUARE_SIZE, SQUARE_SIZE), pygame.SRCALPHA)
-            highlight.fill(COLOR_LAST_MOVE)
+            highlight = pygame.Surface(
+                (self.layout.square_size, self.layout.square_size),
+                pygame.SRCALPHA
+            )
+            highlight.fill(LAST_MOVE_HIGHLIGHT_RGBA)
             self.screen.blit(highlight, (x, y))
 
     def _draw_hint_highlight(
@@ -156,36 +199,38 @@ class ChessBoardRenderer:
 
         # Highlight both from and to squares
         for square in [hint_move.from_square, hint_move.to_square]:
-            x, y = convert_board_square_to_screen_position(square, player_is_white)
+            x, y = self._convert_square_to_screen(square, player_is_white)
 
-            highlight = pygame.Surface((SQUARE_SIZE, SQUARE_SIZE), pygame.SRCALPHA)
-            highlight.fill(COLOR_HINT)
+            highlight = pygame.Surface(
+                (self.layout.square_size, self.layout.square_size),
+                pygame.SRCALPHA
+            )
+            highlight.fill(HINT_MOVE_HIGHLIGHT_RGBA)
             self.screen.blit(highlight, (x, y))
 
         # Draw an arrow from source to destination
-        from_x, from_y = convert_board_square_to_screen_position(hint_move.from_square, player_is_white)
-        to_x, to_y = convert_board_square_to_screen_position(hint_move.to_square, player_is_white)
+        from_x, from_y = self._convert_square_to_screen(hint_move.from_square, player_is_white)
+        to_x, to_y = self._convert_square_to_screen(hint_move.to_square, player_is_white)
 
         # Calculate centers
-        from_center = (from_x + SQUARE_SIZE // 2, from_y + SQUARE_SIZE // 2)
-        to_center = (to_x + SQUARE_SIZE // 2, to_y + SQUARE_SIZE // 2)
+        from_center = (from_x + self.layout.square_size // 2, from_y + self.layout.square_size // 2)
+        to_center = (to_x + self.layout.square_size // 2, to_y + self.layout.square_size // 2)
 
         # Draw arrow line
+        arrow_color = (72, 150, 220)
         pygame.draw.line(
             self.screen,
-            (72, 150, 220),  # Blue color for arrow
+            arrow_color,
             from_center,
             to_center,
             4,
         )
 
         # Draw arrowhead
-        import math
         angle = math.atan2(to_center[1] - from_center[1], to_center[0] - from_center[0])
         arrow_size = 15
         arrow_angle = math.pi / 6  # 30 degrees
 
-        # Calculate arrowhead points
         point1 = (
             to_center[0] - arrow_size * math.cos(angle - arrow_angle),
             to_center[1] - arrow_size * math.sin(angle - arrow_angle),
@@ -197,7 +242,7 @@ class ChessBoardRenderer:
 
         pygame.draw.polygon(
             self.screen,
-            (72, 150, 220),
+            arrow_color,
             [to_center, point1, point2],
         )
 
@@ -208,24 +253,24 @@ class ChessBoardRenderer:
         if not board.is_check():
             return
 
-        # Find the king of the side to move (they're in check)
         king_square = board.king(board.turn)
         if king_square is None:
             return
 
-        x, y = convert_board_square_to_screen_position(king_square, player_is_white)
+        x, y = self._convert_square_to_screen(king_square, player_is_white)
 
         # Draw radial gradient effect for check
-        center_x = x + SQUARE_SIZE // 2
-        center_y = y + SQUARE_SIZE // 2
-
-        # Draw concentric circles for gradient effect
-        for radius in range(SQUARE_SIZE // 2, 0, -2):
-            alpha = int(180 * (1 - radius / (SQUARE_SIZE // 2)))
-            color = (*COLOR_CHECK[:3], alpha)
-            surface = pygame.Surface((SQUARE_SIZE, SQUARE_SIZE), pygame.SRCALPHA)
+        for radius in range(self.layout.square_size // 2, 0, -2):
+            alpha = int(180 * (1 - radius / (self.layout.square_size // 2)))
+            color = (*CHECK_HIGHLIGHT_COLOR_RGB[:3], alpha)
+            surface = pygame.Surface(
+                (self.layout.square_size, self.layout.square_size),
+                pygame.SRCALPHA
+            )
             pygame.draw.circle(
-                surface, color, (SQUARE_SIZE // 2, SQUARE_SIZE // 2), radius
+                surface, color,
+                (self.layout.square_size // 2, self.layout.square_size // 2),
+                radius
             )
             self.screen.blit(surface, (x, y))
 
@@ -236,23 +281,21 @@ class ChessBoardRenderer:
             if piece is None:
                 continue
 
-            x, y = convert_board_square_to_screen_position(square, player_is_white)
+            x, y = self._convert_square_to_screen(square, player_is_white)
 
-            # Get Unicode symbol for the piece
             symbol = piece.symbol()
             unicode_char = PIECE_UNICODE.get(symbol, '?')
 
-            # Render the piece
             piece_surface = self.piece_font.render(unicode_char, True, (0, 0, 0))
             piece_rect = piece_surface.get_rect(
-                center=(x + SQUARE_SIZE // 2, y + SQUARE_SIZE // 2)
+                center=(x + self.layout.square_size // 2, y + self.layout.square_size // 2)
             )
             self.screen.blit(piece_surface, piece_rect)
 
     def _draw_coordinates(self, player_is_white: bool) -> None:
         """Draw file and rank labels on the board edges."""
-        coord_color_light = COLOR_DARK_SQUARE
-        coord_color_dark = COLOR_LIGHT_SQUARE
+        coord_color_light = DARK_SQUARE_COLOR_RGB
+        coord_color_dark = LIGHT_SQUARE_COLOR_RGB
 
         # Draw file labels (a-h) at bottom of board
         for col in range(8):
@@ -261,10 +304,9 @@ class ChessBoardRenderer:
             else:
                 file_label = FILE_LABELS[7 - col]
 
-            x = BOARD_OFFSET_X + col * SQUARE_SIZE + SQUARE_SIZE - 10
-            y = BOARD_OFFSET_Y + BOARD_SIZE - 14
+            x = self.layout.board_offset_x + col * self.layout.square_size + self.layout.square_size - 10
+            y = self.layout.board_offset_y + self.layout.board_size - 14
 
-            # Use contrasting color based on square
             is_light_square = (7 + col) % 2 == 0
             color = coord_color_light if is_light_square else coord_color_dark
 
@@ -278,10 +320,9 @@ class ChessBoardRenderer:
             else:
                 rank_label = RANK_LABELS[row]
 
-            x = BOARD_OFFSET_X + 3
-            y = BOARD_OFFSET_Y + row * SQUARE_SIZE + 3
+            x = self.layout.board_offset_x + 3
+            y = self.layout.board_offset_y + row * self.layout.square_size + 3
 
-            # Use contrasting color based on square
             is_light_square = (row) % 2 == 0
             color = coord_color_light if is_light_square else coord_color_dark
 

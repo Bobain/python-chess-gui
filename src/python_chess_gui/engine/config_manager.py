@@ -95,25 +95,21 @@ def find_stockfish() -> str | None:
     Returns:
         Path to Stockfish executable, or None if not found
     """
-    # First, check saved config
     config_path = get_stockfish_path()
     if config_path:
         return config_path
 
-    # Second, check environment variable
     env_path = os.environ.get("STOCKFISH_PATH")
     if env_path and Path(env_path).exists():
         return env_path
 
-    # Third, try to find in PATH
     stockfish_in_path = shutil.which("stockfish")
     if stockfish_in_path:
         return stockfish_in_path
 
-    # Fourth, check platform-specific common locations
     system = platform.system()
 
-    if system == "Darwin":  # macOS
+    if system == "Darwin":
         common_paths = [
             "/opt/homebrew/bin/stockfish",
             "/usr/local/bin/stockfish",

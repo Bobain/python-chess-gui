@@ -1,38 +1,38 @@
 """Configuration constants for the chess GUI application."""
 
-# Window dimensions
-BOARD_SIZE = 640
-SQUARE_SIZE = BOARD_SIZE // 8
-EVAL_BAR_WIDTH = 40
-SIDEBAR_WIDTH = 160
-STATUS_BAR_HEIGHT = 50
-CONTROL_BAR_HEIGHT = 50
+# Window dimensions (in pixels)
+CHESS_BOARD_SIZE_PIXELS = 640
+BOARD_SQUARE_SIZE_PIXELS = CHESS_BOARD_SIZE_PIXELS // 8
+EVALUATION_BAR_WIDTH_PIXELS = 40
+SIDEBAR_WIDTH_PIXELS = 160
+STATUS_BAR_HEIGHT_PIXELS = 50
+CONTROL_BAR_HEIGHT_PIXELS = 50
 
-WINDOW_WIDTH = BOARD_SIZE + SIDEBAR_WIDTH
-WINDOW_HEIGHT = STATUS_BAR_HEIGHT + BOARD_SIZE + CONTROL_BAR_HEIGHT
+MAIN_WINDOW_WIDTH_PIXELS = CHESS_BOARD_SIZE_PIXELS + SIDEBAR_WIDTH_PIXELS
+MAIN_WINDOW_HEIGHT_PIXELS = STATUS_BAR_HEIGHT_PIXELS + CHESS_BOARD_SIZE_PIXELS + CONTROL_BAR_HEIGHT_PIXELS
 
-# Board position offset (from top-left of window)
-BOARD_OFFSET_X = 0
-BOARD_OFFSET_Y = STATUS_BAR_HEIGHT
+# Board position offset (from top-left of window, in pixels)
+BOARD_OFFSET_X_PIXELS = 0
+BOARD_OFFSET_Y_PIXELS = STATUS_BAR_HEIGHT_PIXELS
 
-# Colors (RGB)
-COLOR_LIGHT_SQUARE = (240, 217, 181)  # Tan
-COLOR_DARK_SQUARE = (181, 136, 99)    # Brown
-COLOR_BACKGROUND = (49, 46, 43)       # Dark gray
-COLOR_WHITE = (255, 255, 255)
-COLOR_BLACK = (0, 0, 0)
-COLOR_SELECTED = (186, 202, 68, 180)  # Yellow-green highlight
-COLOR_LEGAL_MOVE = (130, 151, 105)    # Green dot for legal moves
-COLOR_LAST_MOVE = (205, 210, 106, 128)  # Yellow highlight for last move
-COLOR_CHECK = (235, 97, 80)           # Red for check
-COLOR_HINT = (72, 150, 220, 200)      # Blue highlight for hint move
-COLOR_BUTTON = (70, 70, 70)           # Button background
-COLOR_BUTTON_SELECTED = (76, 154, 42) # Green for selected button
-COLOR_BUTTON_HOVER = (100, 100, 100)  # Button hover
-COLOR_TEXT = (255, 255, 255)          # White text
-COLOR_EVAL_WHITE = (255, 255, 255)    # White side of eval bar
-COLOR_EVAL_BLACK = (0, 0, 0)          # Black side of eval bar
-COLOR_MENU_BG = (39, 37, 34)          # Menu background
+# Colors (RGB/RGBA tuples)
+LIGHT_SQUARE_COLOR_RGB = (240, 217, 181)  # Tan
+DARK_SQUARE_COLOR_RGB = (181, 136, 99)    # Brown
+WINDOW_BACKGROUND_COLOR_RGB = (49, 46, 43)       # Dark gray
+WHITE_COLOR_RGB = (255, 255, 255)
+BLACK_COLOR_RGB = (0, 0, 0)
+SELECTED_SQUARE_HIGHLIGHT_RGBA = (186, 202, 68, 180)  # Yellow-green highlight
+LEGAL_MOVE_INDICATOR_COLOR_RGB = (130, 151, 105)    # Green dot for legal moves
+LAST_MOVE_HIGHLIGHT_RGBA = (205, 210, 106, 128)  # Yellow highlight for last move
+CHECK_HIGHLIGHT_COLOR_RGB = (235, 97, 80)           # Red for check
+HINT_MOVE_HIGHLIGHT_RGBA = (72, 150, 220, 200)      # Blue highlight for hint move
+BUTTON_BACKGROUND_COLOR_RGB = (70, 70, 70)           # Button background
+BUTTON_SELECTED_COLOR_RGB = (76, 154, 42) # Green for selected button
+BUTTON_HOVER_COLOR_RGB = (100, 100, 100)  # Button hover
+TEXT_COLOR_RGB = (255, 255, 255)          # White text
+EVAL_BAR_WHITE_COLOR_RGB = (255, 255, 255)    # White side of eval bar
+EVAL_BAR_BLACK_COLOR_RGB = (0, 0, 0)          # Black side of eval bar
+MENU_BACKGROUND_COLOR_RGB = (39, 37, 34)          # Menu background
 
 # Fonts
 FONT_NAME = None  # Use default system font
@@ -60,8 +60,8 @@ PIECE_UNICODE = {
 }
 
 # Stockfish configuration
-STOCKFISH_DEPTH = 15  # Analysis depth
-STOCKFISH_MOVE_TIME = 1.0  # Seconds to think for AI moves
+STOCKFISH_ANALYSIS_DEPTH = 15  # Analysis depth
+STOCKFISH_MOVE_TIME_SECONDS = 1.0  # Seconds to think for AI moves
 
 # AI difficulty presets (Elo ratings)
 # Note: Stockfish 17+ requires minimum Elo of 1320
@@ -76,11 +76,11 @@ DIFFICULTY_PRESETS = {
 DEFAULT_DIFFICULTY = "Level 3"
 
 # Evaluation bar scaling
-EVAL_MAX_CENTIPAWNS = 1000  # +/- 10 pawns = max bar
-EVAL_MATE_SCORE = 10000  # Score to use for mate positions
+EVALUATION_MAX_CENTIPAWNS = 1000  # +/- 10 pawns = max bar
+EVALUATION_MATE_SCORE = 10000  # Score to use for mate positions
 
 # Frame rate
-FPS = 60
+FRAMES_PER_SECOND = 60
 
 # Coordinate labels
 FILE_LABELS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']

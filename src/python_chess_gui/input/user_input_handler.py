@@ -6,7 +6,8 @@ from enum import Enum, auto
 import chess
 import pygame
 
-from python_chess_gui.coordinate_converter import convert_screen_position_to_board_square
+from python_chess_gui.core.coordinate_converter import convert_screen_position_to_board_square
+from python_chess_gui.layout_manager import LayoutManager
 
 
 class InputAction(Enum):
@@ -31,13 +32,23 @@ class InputResult:
 class UserInputHandler:
     """Handles mouse clicks and keyboard input."""
 
-    def __init__(self, player_is_white: bool = True):
+    def __init__(self, layout: LayoutManager, player_is_white: bool = True):
         """Initialize the input handler.
 
         Args:
+            layout: Layout manager for coordinate conversion
             player_is_white: True if player is white (affects coordinate conversion)
         """
+        self.layout = layout
         self.player_is_white = player_is_white
+
+    def update_layout(self, layout: LayoutManager) -> None:
+        """Update the layout manager.
+
+        Args:
+            layout: New layout manager instance
+        """
+        self.layout = layout
 
     def set_player_color(self, player_is_white: bool) -> None:
         """Update the player's color for coordinate conversion.
@@ -63,7 +74,7 @@ class UserInputHandler:
             return self._handle_key(event.key)
 
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:  # Left click
+            if event.button == 1:
                 return self._handle_click(event.pos)
 
         return InputResult(InputAction.NONE)
@@ -98,7 +109,7 @@ class UserInputHandler:
             InputResult with the clicked square, if on board
         """
         square = convert_screen_position_to_board_square(
-            pos[0], pos[1], self.player_is_white
+            pos[0], pos[1], self.player_is_white, self.layout
         )
 
         if square is not None:

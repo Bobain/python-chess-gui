@@ -3,21 +3,22 @@
 import chess
 import pygame
 
-from python_chess_gui.chess_board_renderer import ChessBoardRenderer
-from python_chess_gui.config_manager import find_stockfish, set_stockfish_path
 from python_chess_gui.constants import (
-    COLOR_BACKGROUND,
     DIFFICULTY_PRESETS,
-    FPS,
-    WINDOW_HEIGHT,
-    WINDOW_WIDTH,
+    FRAMES_PER_SECOND,
+    MAIN_WINDOW_HEIGHT_PIXELS,
+    MAIN_WINDOW_WIDTH_PIXELS,
+    WINDOW_BACKGROUND_COLOR_RGB,
 )
-from python_chess_gui.evaluation_bar_renderer import EvaluationBarRenderer
-from python_chess_gui.game_settings_menu import GameSettingsMenu
-from python_chess_gui.game_state_manager import GameStateManager
-from python_chess_gui.game_status_display import GameStatusDisplay
-from python_chess_gui.stockfish_engine_controller import StockfishEngineController
-from python_chess_gui.user_input_handler import InputAction, UserInputHandler
+from python_chess_gui.core.game_state_manager import GameStateManager
+from python_chess_gui.engine.config_manager import find_stockfish, set_stockfish_path
+from python_chess_gui.engine.stockfish_engine_controller import StockfishEngineController
+from python_chess_gui.input.user_input_handler import InputAction, UserInputHandler
+from python_chess_gui.layout_manager import LayoutManager
+from python_chess_gui.rendering.chess_board_renderer import ChessBoardRenderer
+from python_chess_gui.rendering.evaluation_bar_renderer import EvaluationBarRenderer
+from python_chess_gui.rendering.game_settings_menu import GameSettingsMenu
+from python_chess_gui.rendering.game_status_display import GameStatusDisplay
 
 
 class ChessApplication:
@@ -28,16 +29,23 @@ class ChessApplication:
         pygame.init()
         pygame.display.set_caption("Play Chess - vs Stockfish")
 
-        self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+        # Create resizable window
+        self.screen = pygame.display.set_mode(
+            (MAIN_WINDOW_WIDTH_PIXELS, MAIN_WINDOW_HEIGHT_PIXELS),
+            pygame.RESIZABLE
+        )
         self.clock = pygame.time.Clock()
 
-        # Components
-        self.board_renderer = ChessBoardRenderer(self.screen)
-        self.status_display = GameStatusDisplay(self.screen)
-        self.eval_bar_renderer = EvaluationBarRenderer(self.screen)
-        self.settings_menu = GameSettingsMenu(self.screen)
+        # Initialize layout manager
+        self.layout = LayoutManager(MAIN_WINDOW_WIDTH_PIXELS, MAIN_WINDOW_HEIGHT_PIXELS)
+
+        # Components (all receive layout manager)
+        self.board_renderer = ChessBoardRenderer(self.screen, self.layout)
+        self.status_display = GameStatusDisplay(self.screen, self.layout)
+        self.eval_bar_renderer = EvaluationBarRenderer(self.screen, self.layout)
+        self.settings_menu = GameSettingsMenu(self.screen, self.layout)
         self.game_state = GameStateManager()
-        self.input_handler = UserInputHandler()
+        self.input_handler = UserInputHandler(self.layout)
         self.engine: StockfishEngineController | None = None
 
         # Game state
@@ -62,7 +70,7 @@ class ChessApplication:
                 self._render_game()
 
             pygame.display.flip()
-            self.clock.tick(FPS)
+            self.clock.tick(FRAMES_PER_SECOND)
 
         self._cleanup()
 
@@ -73,10 +81,45 @@ class ChessApplication:
                 self.running = False
                 return
 
+            if event.type == pygame.VIDEORESIZE:
+                self._handle_resize(event.w, event.h)
+                continue
+
             if self.in_menu:
                 self._handle_menu_event(event)
             else:
                 self._handle_game_event(event)
+
+    def _handle_resize(self, width: int, height: int) -> None:
+        """Handle window resize event.
+
+        Args:
+            width: New window width
+            height: New window height
+        """
+        # Update layout dimensions
+        self.layout.update_dimensions(width, height)
+
+        # Recreate screen with new size
+        self.screen = pygame.display.set_mode(
+            (self.layout.window_width, self.layout.window_height),
+            pygame.RESIZABLE
+        )
+
+        # Update all components with new layout and screen
+        self.board_renderer.screen = self.screen
+        self.board_renderer.update_layout(self.layout)
+
+        self.status_display.screen = self.screen
+        self.status_display.update_layout(self.layout)
+
+        self.eval_bar_renderer.screen = self.screen
+        self.eval_bar_renderer.update_layout(self.layout)
+
+        self.settings_menu.screen = self.screen
+        self.settings_menu.update_layout(self.layout)
+
+        self.input_handler.update_layout(self.layout)
 
     def _handle_menu_event(self, event: pygame.event.Event) -> None:
         """Handle events while in menu.
@@ -84,11 +127,9 @@ class ChessApplication:
         Args:
             event: Pygame event to process
         """
-        # Handle path input mode keyboard events
         if event.type == pygame.KEYDOWN:
             if self.settings_menu.path_input_mode:
                 if self.settings_menu.handle_key_event(event):
-                    # If Enter was pressed and path input mode ended, try to start game
                     if not self.settings_menu.path_input_mode and self.settings_menu.path_input_text:
                         self._start_game()
                     return
@@ -97,7 +138,6 @@ class ChessApplication:
                 return
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            # Check if clicking confirm button in path input mode
             if self.settings_menu.path_input_mode:
                 if (self.settings_menu.path_confirm_rect and
                     self.settings_menu.path_confirm_rect.collidepoint(event.pos)):
@@ -139,7 +179,6 @@ class ChessApplication:
         Args:
             square: The clicked square
         """
-        # Don't allow moves if it's the AI's turn
         is_player_turn = self.game_state.board.turn == chess.WHITE if self.player_is_white else self.game_state.board.turn == chess.BLACK
 
         if not is_player_turn:
@@ -148,22 +187,17 @@ class ChessApplication:
         if self.game_state.is_game_over():
             return
 
-        # If a piece is already selected
         if self.game_state.selected_square is not None:
-            # Try to move to the clicked square
             move = self.game_state.try_move(self.game_state.selected_square, square)
 
             if move is not None:
-                # Move successful
                 self.legal_moves_from_selection = []
                 self.hint_move = None
                 self._update_evaluation()
                 self._trigger_ai_move()
             else:
-                # Try selecting a new piece
                 self.legal_moves_from_selection = self.game_state.select_square(square)
         else:
-            # Select a piece
             self.legal_moves_from_selection = self.game_state.select_square(square)
 
     def _trigger_ai_move(self) -> None:
@@ -181,7 +215,6 @@ class ChessApplication:
 
         self.ai_thinking = True
 
-        # Get AI move
         ai_move = self.engine.get_best_move(self.game_state.board)
         if ai_move is not None:
             self.game_state.make_move(ai_move)
@@ -197,7 +230,6 @@ class ChessApplication:
         if self.game_state.is_game_over():
             return
 
-        # Only show hint on player's turn
         is_player_turn = (
             self.game_state.board.turn == chess.WHITE
             if self.player_is_white
@@ -214,13 +246,11 @@ class ChessApplication:
         if self.ai_thinking:
             return
 
-        # Undo both AI and player moves (one full round)
         self.game_state.undo_move_pair()
         self.legal_moves_from_selection = []
         self.hint_move = None
         self._update_evaluation()
 
-        # If it's now AI's turn (can happen with odd move counts), trigger AI
         is_player_turn = (
             self.game_state.board.turn == chess.WHITE
             if self.player_is_white
@@ -231,17 +261,14 @@ class ChessApplication:
 
     def _update_evaluation(self) -> None:
         """Update the position evaluation."""
-        # Handle game over positions directly
         if self.game_state.board.is_checkmate():
-            # The side to move is checkmated, so the other side won
             if self.game_state.board.turn == chess.WHITE:
-                self.current_evaluation = -100.0  # Black won
+                self.current_evaluation = -100.0
             else:
-                self.current_evaluation = 100.0  # White won
+                self.current_evaluation = 100.0
             return
 
         if self.game_state.board.is_game_over():
-            # Stalemate or draw
             self.current_evaluation = 0.0
             return
 
@@ -252,13 +279,10 @@ class ChessApplication:
         """Start a new game with the selected settings."""
         self.player_is_white, self.difficulty_name = self.settings_menu.get_settings()
 
-        # Check if user provided a custom Stockfish path
         custom_path = self.settings_menu.get_stockfish_path()
         if custom_path:
-            # Save to config for future use
             set_stockfish_path(custom_path)
 
-        # Initialize engine with selected difficulty
         elo = DIFFICULTY_PRESETS[self.difficulty_name]
         stockfish_path = custom_path or find_stockfish()
 
@@ -266,28 +290,23 @@ class ChessApplication:
             self.engine.quit()
         self.engine = StockfishEngineController(elo, stockfish_path)
 
-        # Check if Stockfish is available
         if not self.engine.is_available():
             self.settings_menu.show_path_input(
                 "Stockfish not found! Enter the path to the Stockfish executable:"
             )
             return
 
-        # Reset game state
         self.game_state.reset()
         self.legal_moves_from_selection = []
         self.hint_move = None
         self.current_evaluation = 0.0
 
-        # Update input handler with player color
         self.input_handler.set_player_color(self.player_is_white)
 
-        # Get initial evaluation
         self._update_evaluation()
 
         self.in_menu = False
 
-        # If player is black, AI moves first
         if not self.player_is_white:
             self._trigger_ai_move()
 
@@ -308,10 +327,8 @@ class ChessApplication:
 
     def _render_game(self) -> None:
         """Render the game screen."""
-        # Clear background
-        self.screen.fill(COLOR_BACKGROUND)
+        self.screen.fill(WINDOW_BACKGROUND_COLOR_RGB)
 
-        # Render board
         self.board_renderer.render(
             board=self.game_state.board,
             player_is_white=self.player_is_white,
@@ -321,10 +338,8 @@ class ChessApplication:
             hint_move=self.hint_move,
         )
 
-        # Render evaluation bar
         self.eval_bar_renderer.render(self.current_evaluation, self.player_is_white)
 
-        # Render status
         turn_text = self.game_state.get_turn_text()
         if self.ai_thinking:
             turn_text = "AI thinking..."
