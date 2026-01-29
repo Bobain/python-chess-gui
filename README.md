@@ -1,12 +1,14 @@
 # Python Chess GUI
 
+![Demo](chess_demo.gif)
+
 A Python chess application with a graphical user interface built using pygame and python-chess library, featuring player vs Stockfish AI gameplay.
 
 ## Features
 
 - Player vs Stockfish AI gameplay
 - Color selection (play as White or Black)
-- Adjustable AI difficulty (Beginner to Expert)
+- Adjustable AI difficulty (Level 1-5)
 - Move takeback (undo)
 - Hint system (get Stockfish's suggested move)
 - Real-time evaluation bar
