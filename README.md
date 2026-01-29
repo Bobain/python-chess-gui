@@ -17,10 +17,24 @@ A Python chess application with a graphical user interface built using pygame an
 ## Requirements
 
 - Python 3.12+
-- uv (package manager)
 - Stockfish engine
 
 ## Installation
+
+### Option 1: Install from PyPI (recommended)
+
+```bash
+pipx install python-chess-gui
+```
+
+Or with pip in a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Linux/macOS
+pip install python-chess-gui
+```
+
+### Option 2: Install from source
 
 1. Clone the repository:
    ```bash
@@ -33,18 +47,24 @@ A Python chess application with a graphical user interface built using pygame an
    uv sync
    ```
 
-3. Install Stockfish:
-   - macOS: `brew install stockfish`
-   - Linux: `sudo apt install stockfish`
+### Install Stockfish
 
-   Alternatively, set the `STOCKFISH_PATH` environment variable to the full path of the Stockfish executable:
-   ```bash
-   export STOCKFISH_PATH=/path/to/stockfish
-   ```
+- macOS: `brew install stockfish`
+- Linux: `sudo apt install stockfish`
+
+Alternatively, set the `STOCKFISH_PATH` environment variable to the full path of the Stockfish executable:
+```bash
+export STOCKFISH_PATH=/path/to/stockfish
+```
 
 ## Usage
 
 Run the application:
+```bash
+chess-gui
+```
+
+Or if installed from source with uv:
 ```bash
 uv run chess-gui
 ```
